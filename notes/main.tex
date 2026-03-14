@@ -1,0 +1,76 @@
+\documentclass[
+	draftmark = false,
+%	traditional = true,
+%	colors = false,
+%	coverpage = coverpage.tex,
+%	coverpage = coverpage.pdf,
+%   geometry = b5,
+	fontsetup = font-setup-open.tex,
+	titlesetup = titles-setup.tex
+]{AJbook}
+
+\usepackage[xindy, splitindex]{imakeidx}
+\makeindex[
+	columns=2,
+	program=truexindy,
+	intoc=true,
+	options=-M texindy -I xelatex -C utf8,
+	title={名词索引}]	% 名词索引
+
+\usepackage[unicode, bookmarksnumbered]{hyperref}
+\hypersetup{
+	pdfauthor = {Lyscoria},
+	pdftitle = {信数笔记},
+	CJKbookmarks = true}
+
+% 增加表格高度
+\renewcommand*\arraystretch{1.5}
+
+% 图片相关的宏包
+\usepackage{graphicx} %插入图片的宏包
+\usepackage{float} %设置图片浮动位置的宏包
+\usepackage{subfigure} %插入多图时用子图显示的宏包
+
+\numberwithin{equation}{section}
+\renewcommand{\theequation}{\thesection--\arabic{equation}}
+
+\numberwithin{figure}{section}
+\renewcommand{\thefigure}{\thechapter--\arabic{figure}}
+
+\numberwithin{table}{section}
+\renewcommand{\thetable}{\thechapter--\arabic{table}}
+
+% 算法相关宏包
+\usepackage{algorithm}      % 提供浮动体环境（外面的框和标题）
+\usepackage{algpseudocode}  % 提供伪代码命令（里面的 \State, \If 等）
+
+% 绘图
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\usepackage{enumitem}
+
+\renewcommand{\d}{\mathrm{d}}   % 微分符号
+\newcommand{\e}{\mathrm{e}}     % e
+\newcommand{\E}{\mathbb{E}}     % 期望
+\newcommand{\Var}{\text{Var}}   % 方差
+\newcommand{\Cor}{\text{Cor}}   % 协方差
+\newcommand{\sign}{\text{sign}} % 符号函数
+\newcommand{\Err}{\text{Err}}   % 误差
+
+\allowdisplaybreaks[4]
+
+\begin{document}
+
+    \frontmatter
+
+    \mainmatter
+
+    \include{chapters/chapter1}
+    \include{chapters/chapter2}
+    \include{chapters/chapter3}
+    \include{chapters/chapter4}
+    \include{chapters/chapter5}
+
+\end{document}

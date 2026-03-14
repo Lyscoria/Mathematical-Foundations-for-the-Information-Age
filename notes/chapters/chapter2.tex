@@ -1,0 +1,130 @@
+\chapter{奇异值分解}
+
+\section{第一奇异值与第一奇异向量}
+
+奇异值分解 (Singular Value Decomposition, SVD) 始于研究一组向量的“最佳拟合直线”。例如，有若干向量 $a_1, \dots, a_n \in \mathbb{R}^d$，我们希望找到一个方向向量 $v$，来最小化所有向量与 $v$ 所确定的直线的距离的平方和。由勾股定理，这就等价于最大化所有向量在这条直线上的投影的平方和。将 $a_1, \dots, a_n$ 作为行向量组成矩阵 $A$，那么：
+\[
+    \|Av\|^2 = \left\| \begin{pmatrix} a_1^\top \\ \vdots \\ a_n^\top \end{pmatrix} v \right\|^2 = \sum |a_i^\top v|^2 = \sum \text{proj}_i^2
+\]
+
+因此，上述目标就等价于：
+\[
+    \max_{\|v\|=1} \|Av\|
+\]
+
+我们将 $\sigma_1 = \max_{\|v\|=1} \|Av\|$ 定义为\textbf{第一奇异值}，同时将对应的 $v$ (记为 $v_1$) 称为\textbf{第一奇异向量}（第一右奇异向量），同时记 $u_1$ 为 $A v_1$ 方向的单位向量，即 $A v_1 = \sigma_1 u_1$（$u_1$ 也被称为第一左奇异向量）。
+
+引入 Frobenius 范数：
+\[
+    \|A\|_F = \sqrt{\sum_i \sum_j |a_{ij}|^2}
+\]
+我们还可以从另一个角度来理解。令 $A_1 = A v_1 v_1^\top$，我们断言 $A_1$ 是在 Frobenius 范数的意义下对矩阵的 $A$ 的秩 1 最佳逼近：
+
+\begin{proposition}
+    对任意秩为 1 的矩阵 $B$，有：
+    \[
+        \|A - A_1\|_F \le \|A - B\|_F
+    \]
+\end{proposition}
+
+\begin{proof}
+    证明分两个步骤。首先，既然 $B$ 是秩为 1 的，它的行向量必然共线，设方向向量为 $v$。由于
+    \[
+        \|A - B\|_F^2 = \left\| \begin{pmatrix} a_1^\top - b_1^\top \\ \vdots \\ a_n^\top - b_n^\top \end{pmatrix} \right\|_F^2 = \sum \|a_i - b_i\|^2
+    \]
+    要想让这个数最小，$b_i$ 一定是 $a_i$ 在方向 $v$ 上的投影。在此基础上，我们再考虑什么样的 $v$ 能够取得最小值，而这正是我们一开始所寻找的“最佳拟合直线”。
+\end{proof}
+
+\section{奇异值分解}
+
+接下来，我们可以定义第二奇异值和第二奇异向量，也就是寻找“最佳拟合平面”（或者秩 2 最佳逼近）。设平面由正交的单位向量 $w_1, w_2$ 确定，则对于向量 $a$：
+\[
+    \|\text{proj}(a)\|^2 = \langle a, w_1 \rangle^2 + \langle a, w_2 \rangle^2
+\]
+
+同样把 $a_1, \dots, a_n$ 作为行向量写成矩阵，则：
+\[
+    \sum \|\text{proj}(a_i)\|^2 = \sum \langle a_i, w_1 \rangle^2 + \sum \langle a_i, w_2 \rangle^2 = \|Aw_1\|^2 + \|Aw_2\|^2
+\]
+
+所以我们的目标就是：
+\[
+    \max_{\substack{\|w_1\|=\|w_2\|=1 \\ w_1 \perp w_2}} \left( \|Aw_1\|^2 + \|Aw_2\|^2 \right)
+\]
+
+如何找这样的 $w_1, w_2$？尝试如下的“贪心算法”：
+\begin{algorithm}[h]
+    \caption{最佳拟合平面}
+    \begin{algorithmic}[1]
+        \State $v_1 = \arg\max_{\|v\|=1} \|Av\|$
+        \State $v_2 = \arg\max_{\|v\|=1, v \perp v_1} \|Av\|$
+    \end{algorithmic}
+\end{algorithm}
+
+也就是在第一奇异向量 $v_1$ 的基础上，在与之正交的向量中继续确定 $v_2$。下面来证明这个算法的正确性。
+
+\begin{proof}
+    任取正交的单位向量 $w_1$，$w_2$。首先，永远有 $\|Av_1\| \ge \|Aw_1\|$。注意到 $\|Aw_1\|^2 + \|Aw_2\|^2$ 仅仅由 $w_1$ 和 $w_2$ 所确定的平面决定，与坐标轴的摆放方式无关，我们可以旋转 $w_1$ 和 $w_2$ 而不改变 $\|Aw_1\|^2 + \|Aw_2\|^2$。因此，不妨将 $w_2$ 取作该平面内与 $v_1$ 正交的向量，这样就有：
+    \[
+        \|Av_2\| \ge \|Aw_2\|
+    \]
+    从而：
+    \[
+        \|Av_1\|^2 + \|Av_2\|^2 \ge \|Aw_1\|^2 + \|Aw_2\|^2
+    \]
+\end{proof}
+
+$v_2$ 便是第二奇异向量，$\sigma_2 = \|Av_2\|$ 便是第二奇异值。
+
+特别地，有一个不太平凡的点：
+\begin{proposition}
+    $Av_1 \perp Av_2$。
+\end{proposition}
+
+\begin{proof}
+    构造函数 $f(\theta) = \| A(\cos\theta v_1 + \sin\theta v_2) \|^2$，$\theta \in [-\pi, \pi)$。
+    展开可得：
+    \begin{align*}
+        f(\theta) &= \| \cos\theta Av_1 + \sin\theta Av_2 \|^2 \\
+        &= \cos^2\theta \|Av_1\|^2 + \sin^2\theta \|Av_2\|^2 + \sin(2\theta) \langle Av_1, Av_2 \rangle
+    \end{align*}
+    
+    求导：
+    \[
+        f'(\theta) = 2\sin\theta\cos\theta (\|Av_2\|^2 - \|Av_1\|^2) + 2\cos 2\theta \langle Av_1, Av_2 \rangle
+    \]
+    \[
+        f'(0) = 2 \langle Av_1, Av_2 \rangle
+    \]
+    
+    若 $Av_1$ 与 $Av_2$ 不垂直，则 $f'(0) \neq 0$。
+    这意味着 $\exists \theta \neq 0$ 使：
+    \[
+        \| A(\cos\theta v_1 + \sin\theta v_2) \| > \|Av_1\|
+    \]
+    这与 $v_1$ 的定义（最大化 $\|Av\|$）矛盾！
+\end{proof}
+
+接续以上的过程，最终得到一列正交单位向量 $v_1, \dots, v_d$，且 $Av_1, \dots, Av_d$ 同样两两正交。令 $Av_i = \sigma_i u_i$ ($u_i$ 为单位向量)，那么：
+\[
+    A = \sum Av_i v_i^\top = \sum \sigma_i u_i v_i^\top = U \Sigma V^\top
+\]
+
+其中
+\[
+    U = (u_1 | \dots | u_d), \quad V = (v_1 | \dots | v_d), \quad \Sigma = \text{diag}(\sigma_1, \dots, \sigma_d)
+\]
+
+这就是 $A$ 的\textbf{奇异值分解}。特别地，
+\[
+    \|A\|_F^2 = \sum \sigma_i^2
+\]
+
+如果截取前 $k$ 个奇异值/奇异向量，仿照上文的推导，这就是“最佳拟合 $k$ 维子空间”或者“秩 $k$ 最佳逼近”。
+
+最后的一点问题是，我们应当如何计算奇异值分解？由 $Av_i = \sigma_i u_i$，得 $u_i^\top A v_i = \sigma_i$，即 $u_i^\top A = \sigma_i v_i^\top$，也即 $A^\top u_i = \sigma_i v_i$。
+进而：
+\[
+    A^\top A v_i = A^\top (\sigma_i u_i) = \sigma_i (A^\top u_i) = \sigma_i (\sigma_i v_i) = \sigma_i^2 v_i
+\]
+所以 $v_i$ 正是 $A^\top A$ 的特征向量，$\sigma_i^2$ 就是对应的特征值。我们就可以通过计算特征值来计算 SVD。对于计算机来说，可以使用 Power Method，随机取 $v = \sum c_i v_i$，计算 $(A^\top A)^k v = \sum \sigma_i^{2k} c_i v_i \approx \sigma_1^{2k} c_1 v_1$，这里不再详述。

@@ -1,0 +1,554 @@
+\chapter{机器学习}
+
+\section{感知机算法与核函数}
+
+给定样本点 $(x_i, y_i)$，其中 $x_i \in \mathbb{R}^d$，$y_i \in \{1, -1\}$。考虑线性函数 $h(x) = \langle w, x \rangle + b$，我们希望以 $\sign(h(x))$ 为依据来对样本点进行分类。如果令 $\tilde{x} \leftarrow (x, 1)^\top$，$\tilde{w} \leftarrow (w, b)^\top$，那么 $h(x) = \langle \tilde{w}, \tilde{x} \rangle$，就可以把 $b$ 合并进内积，以下只用考虑 $h(x) = \langle w, x \rangle$ 的情形。
+
+感知机算法是最基本的一种学习算法，大体流程如下：
+
+\begin{algorithm}[h]
+    \caption{感知机算法}
+    \begin{algorithmic}[1]
+        \State 初始化 $w = 0$
+        \Loop
+            \If{$\exists i$，$y_i \langle w, x_i \rangle \le 0$}
+                \State $w \leftarrow w + y_i x_i$
+            \Else
+                \State \textbf{break}
+            \EndIf
+        \EndLoop
+        \State \Return $w$
+    \end{algorithmic}
+\end{algorithm}
+
+$y_i \langle w, x_i \rangle \le 0$ 也就是相应的点被错误分类，一旦错误分类就增大它的权重。虽然算法很简单，但我们可以断言，只要数据是线性可分的（存在 $w^*$ 使得 $\forall i$，$y_i\langle w^*, x_i\rangle \ge 1$），那么算法一定能收敛。
+
+\begin{theorem}
+    若 $\exists w^*$ 使 $\forall i, y_i \langle x_i, w^* \rangle \ge 1$，那么算法在有限步内收敛。
+\end{theorem}
+
+\begin{proof}
+    设更新 $t$ 次后的结果为 $w_t$，也即 $w_{t+1} = w_t + y_i x_i$，其中 $y_i \langle w_t, x_i \rangle \le 0$。
+
+    一方面，
+    \begin{align*}
+        \langle w_{t+1}, w^* \rangle &= \langle w_t + y_i x_i, w^* \rangle \\
+        &= \langle w_t, w^* \rangle + y_i \langle x_i, w^* \rangle \\
+        &\ge \langle w_t, w^* \rangle + 1
+    \end{align*}
+
+    于是
+    \[
+        \langle w_t, w^* \rangle \ge t
+    \]
+
+    另一方面，假设 $\|x_i\| \le r, \forall i$，那么
+    \begin{align*}
+        \|w_{t+1}\|^2 &= \|w_t + y_i x_i\|^2 \\
+        &= \|w_t\|^2 + 2 y_i \langle w_t, x_i \rangle + \|y_i x_i\|^2 \\
+        &\le \|w_t\|^2 + r^2 \quad (\text{因为 } y_i \langle w_t, x_i \rangle \le 0)
+    \end{align*}
+    
+    所以
+    \[
+        \|w_t\|^2 \le t r^2 \implies \|w_t\| \le r\sqrt{t}
+    \]
+
+    综合上述两点：
+    \[
+        t \le \langle w_t, w^* \rangle \le \|w_t\| \|w^*\| \le r\sqrt{t} \|w^*\|
+    \]
+
+    $\therefore$ 有限步内算法一定停止。
+\end{proof}
+
+如果数据是线性不可分的，那么可以使用\textbf{核函数}，也就是把内积 $\langle x_i, x_j \rangle = x_i^\top x_j$ 换成 $k(x_i, x_j) = \phi(x_i)^\top \phi(x_j)$，通过 $\phi$ 把数据点映射到高维的空间中，这里不详细展开。
+
+\section{泛化}
+
+\subsection{基本情形} ~
+
+先来引入一些基本符号：
+
+\begin{itemize}[noitemsep]
+    \item $\mathcal{D}$：数据的真实分布。
+    \item $S$：从 $\mathcal{D}$ 采样得到的训练集。
+    \item $c^*$: target concept，也就是说 $\forall x, c^*(x)$ 是 ground truth label。
+    \item $h \in \mathcal{H}$: hypothesis，也就是分类器。
+    \item 真实误差 True Error: $\Err_{\mathcal{D}}(h) = \Pr_{x \sim \mathcal{D}}[h(x) \ne c^*(x)]$。
+    \item 训练误差 Training Error: $\Err_S(h)$。
+\end{itemize}
+
+我们关心我们的模型的\textbf{泛化(Generalization)}性能，换言之我们希望如果 $\Err_S(h) = 0$，那么 $\Err_\mathcal{D}(h)$ 也应当很小。如果 $\mathcal{H}$ 是有限集，那么从 Union Bound 出发，我们就可以得到一个基本的估计：
+
+\begin{theorem}
+    若 $|S| > \frac{1}{\epsilon} \log \frac{|\mathcal{H}|}{\delta}$，则至少有 $1-\delta$ 的概率使得
+    \[
+        \forall h \in \mathcal{H}, \Err_{\mathcal{D}}(h) \ge \epsilon \implies Err_S(h) > 0
+    \]
+    (等价地说：$Err_S(h)=0 \implies \Err_{\mathcal{D}}(h) < \epsilon$)
+\end{theorem}
+
+\begin{proof}
+    记 $n=|S|$，
+    \begin{align*}
+        \Pr[\exists h \in \mathcal{H}, \Err_{\mathcal{D}}(h) \ge \epsilon \text{ but } \Err_S(h)=0] 
+        &\le |\mathcal{H}| \cdot (1-\epsilon)^n \\
+        &\le |\mathcal{H}| \cdot \e^{-\epsilon n}
+    \end{align*}
+    
+    令 $|\mathcal{H}| \cdot \e^{-\epsilon n} < \delta$ 整理得证.
+\end{proof}
+
+一般地可以证明：当 $|S| > \frac{1}{2\epsilon^2} (\log |\mathcal{H}| + \log \frac{2}{\delta})$ 时，至少有 $1-\delta$ 的概率，
+\[
+    |\Err_{\mathcal{D}}(h) - \Err_S(h)| < \epsilon
+\]
+
+课上没讲这个证明，实际是用 Chernoff Bound:
+\[
+    |\Err_{\mathcal{D}}(h) - \Err_S(h)| \le 2|\mathcal{H}| \cdot \e^{-2n\epsilon^2}
+\]
+
+注：上面的定理一定程度上支持了 Occam 剃刀原理。
+改写一下结果相当于说至少有 $1-\delta$ 的概率，$\Err_S(h)=0 \implies$
+\[
+    \Err_{\mathcal{D}}(h) < \frac{\log |\mathcal{H}| + \log(1/\delta)}{|S|}
+\]
+所以对于越简单的规则， $|\mathcal{H}|$ 越小，上面的 bound 就越紧（假设 $\mathcal{H}$ 中的规则以 $b$ bit 来描述，那么 $|\mathcal{H}| \le 2^b$，代入上式 $\Err \lesssim b/|S|$）。
+
+\subsection{VC-Dimension} ~
+
+当 $|\mathcal{H}| = \infty$ 时，上面的定理不再适用。关键是，虽然我们有无穷多 $h$，但是很多 $h$ 实际分类效果没有区别，比如说对于两条不同的直线，虽然方程不同但是可能把点分成了相同的部分。我们需要引入一个量来衡量 $\mathcal{H}$ 中本质上有多少不同的分类器，这就导向了\textbf{ VC 维度}的概念。
+
+注：本节中我们把 $\mathcal{H}$ 视为一个 Set System，也就是若干集合 $h$ 的集合，每个 $h \in \mathcal{H}$ 相当于上文记号的 $\{x \in X \mid h(x) = 1\}$。
+
+\begin{definition}
+    对于集合 $X$ 和 hypothesis class $\mathcal{H}$，取 $A \subset X$。若 $\forall S \subset A, \exists h \in \mathcal{H}$ s.t. $S = h \cap A$ (此时也称 $S$ can be expressed by $h$)，则称 $A$ is shattered by $(X, \mathcal{H})$。
+\end{definition}
+
+换言之，如果一个样本集 $A$ 能够被 $\mathcal{H}$ 分类成所有可能的样子，就说 $A$ 能够被 shatter（中文意思是“打散”）。
+
+\begin{definition}
+    给定集合 $X$ 和 hypothesis class $\mathcal{H}$，如果
+    \begin{itemize}[noitemsep]
+        \item $\exists A \subset X, |A|=d, A$ 能够被 shatter。
+        \item $\forall A \subset X, |A|=d+1, A$ 不能被 shatter。
+    \end{itemize}
+    就称 $(X, \mathcal{H})$ 的 VC-Dimension 为 $d$。如果第二点的 $d$ 不存在，就记 $(X, \mathcal{H})$ 的 VC-Dimension 为 $+\infty$。
+\end{definition}
+
+也即 VC-Dimension 表示 $\mathcal{H}$ 在 $X$ 中最大能打散多大的集合。
+
+\begin{example} 
+    一些简单的 VC-Dimension。
+    \begin{itemize}[noitemsep]
+        \item $X=\mathbb{R}, \mathcal{H}=\{[a,b]\}, VC=2$.
+        \item $X=\mathbb{R}, \mathcal{H}=\{[a,b] \cup [c,d]\}, VC=4$.
+        \item $X=\mathbb{R}, \mathcal{H}=\{\text{有限集}\}, VC=+\infty$.
+        \item $X=\mathbb{R}^2, \mathcal{H}=\{\text{边平行于坐标轴的矩形}\}, VC=4$.
+        \item $X=\mathbb{R}^2, \mathcal{H}=\{\text{凸多边形}\}, VC=+\infty$.
+    \end{itemize}
+\end{example}
+
+下面是个不是太平凡的例子。
+
+\begin{theorem}
+    $X=\mathbb{R}^d, \mathcal{H}=\{d\text{维半平面}\}$, 则 $VC=d+1$.
+\end{theorem}
+
+\begin{proof}
+    先考虑原点+坐标轴正方向上单位长度的点，共 $d+1$ 个，显然可以 shatter，故 $VC \ge d+1$。
+    
+    任取 $d+2$ 个点 $x_i \in \mathbb{R}^d$，加上一个维度的 1，得到 $p_i = (x_i^{(1)}, \dots, x_i^{(d)}, 1)^\top$，此时 $p_i \in \mathbb{R}^{d+1}$。由于 $p_i$ 共有 $d+2$ 个，它们必然线性相关，即存在不全为 $0$ 的 $c_i \in \mathbb{R}$，使得
+    \[
+        \sum c_i p_i = 0
+    \]
+    
+    特别地，从最后一个维度来看， $\sum c_i = 0$，故 $c_i$ 有正有负。此时
+    \[
+        \sum_{c_i \ge 0} c_i p_i = \sum_{c_i \le 0} (-c_i) p_i
+    \]
+    
+    记 $M = \sum_{c_i \ge 0} c_i$，有
+    \[
+        \sum_{c_i \ge 0} \frac{c_i}{M} \cdot p_i = \sum_{c_i \le 0} \frac{|c_i|}{M} p_i
+    \]
+    
+    这意味着两部分的凸包是有交集的，必然线性不可分。于是 $VC = d+1$。
+\end{proof}
+
+\begin{corollary}
+    $X=\mathbb{R}^d, \mathcal{H}=\{d\text{维球}\}, VC=d+1$，实际上和线性分类器并无区别。
+\end{corollary}
+
+\subsection{Growth Function} ~
+
+\begin{definition}
+    $\pi_{\mathcal{H}}(n) := \max_{|S|=n} |\{h \cap S \mid h \in \mathcal{H}\}|$ 称为 Growth Function。
+\end{definition}
+
+Growth Function 反映的是 $\mathcal{H}$ 的“表现力”，显然总有 $\pi_{\mathcal{H}}(n) \le 2^n$。VC-Dimension 正是最大的满足 $\pi_\mathcal{H}(n) = 2^n$ 的 $n$。当 $n$ 大于 VC-Dimension 时，下面的定理指出 $\pi_\mathcal{H}(n) = O(n^d)$：
+
+\begin{theorem}
+    $VC(X, \mathcal{H}) = d$，则
+    \[
+        \pi_{\mathcal{H}}(n) \le \binom{n}{\le d} = \binom{n}{0} + \dots + \binom{n}{d}
+    \]
+\end{theorem}
+
+不难证明 $\binom{n}{\le d} \le n^d + 1$。
+
+\begin{theorem}
+    $\pi_{\mathcal{H}_1 \cap \mathcal{H}_2}(n) \le \pi_{\mathcal{H}_1}(n) \cdot \pi_{\mathcal{H}_2}(n)$.
+\end{theorem}
+
+\begin{proof}
+    $h \cap S = (h_1 \cap S) \cap (h_2 \cap S)$，由此确定了满射 $\{h \cap S \mid h \in \mathcal{H}_1\} \times \{h \cap S \mid h \in \mathcal{H}_2\} \rightarrow \{h \cap S \mid h \in \mathcal{H}\}$。
+    注：实际上 $\cap$ 可以是任意的组合方式。$\cap$ 可以看作对 $h_1$ 和 $h_2$ 的输出过了一下与门，可以推广到其他的布尔函数。
+\end{proof}
+
+\subsection{基于 VC-Dimension 的泛化界}
+
+\begin{theorem}
+    当 $|S|=n \ge \frac{4}{\epsilon} \left(\log (2\pi_{\mathcal{H}}(2n)) + \log \frac{1}{\delta}\right)$ 时，至少有 $1-\delta$ 的概率使得
+    \[
+        \forall h \in \mathcal{H}, \Err_S(h)=0 \implies \Err_{\mathcal{D}}(h) < \epsilon
+    \]
+\end{theorem}
+
+\begin{proof}
+    再从分布 $\mathcal{D}$ 中 sample $S'$, $|S'|=|S|=n$。定义
+    \begin{itemize}[noitemsep]
+        \item 事件 A: $\exists h \in \mathcal{H}, \Err_S(h)=0$ 但 $\Err_{\mathcal{D}}(h) > \epsilon$。
+        \item 事件 B: $\exists h \in \mathcal{H}, \Err_S(h)=0$ 但 $\Err_{S'}(h) > \frac{\epsilon}{2}$。
+    \end{itemize}
+    
+    记 $S'$ 中的样本为 $X_1 \dots X_n$，在事件 $A$ 的条件下, $\E[X_i] > \epsilon, \Var(X_i) \le \epsilon$，则
+    \begin{align*}
+        \Pr[\neg B \mid A] &= \Pr\left[\sum X_i \le \frac{1}{2}n\epsilon\right] \\
+        &\le \Pr\left[\left|\sum X_i - \E\left[\sum X_i\right]\right| \ge \frac{n\epsilon}{2}\right] \\
+        &\le \Var\left(\sum X_i\right) \cdot \left(\frac{2}{n\epsilon}\right)^2 \le \frac{4}{n\epsilon}
+    \end{align*}
+
+    只要 $n > \frac{8}{\epsilon}$，就有 $\Pr[B \mid A] \ge \frac{1}{2}$,此时 $\Pr[B] \ge \Pr[A]\Pr[B \mid A] \ge \frac{1}{2}\Pr[A]$。
+    
+    因此，要让 $\Pr[A] < \delta$，只要 $\Pr[B] < \frac{1}{2}\delta$ 即可。
+
+    换一种采样 $S$ 的方式：先采样 $2n$ 个点，将其随机分两半，一部分是 $S$，另一部分是 $S'$，这种采样方式和之前等价。
+    对于某个确定的 $h \in \mathcal{H}$，若 $\Err_{S \cup S'}(h) \le \frac{\epsilon}{4}$ 则 $\Pr[B]=0$，因此只用考虑 $\Err_{S \cup S'}(h) > \frac{\epsilon}{4}$ 的情形，此时 $S \cup S'$ 的 $2n$ 个点中至少有 $2n \cdot \frac{\epsilon}{4} = \frac{\epsilon n}{2}$ 个“坏点”，这些“坏点”全在 $S'$ 中的概率：
+    \[
+        p \le \frac{2n - \frac{1}{2}\epsilon n}{2n} \cdot \frac{2n-1-\frac{1}{2}\epsilon n}{2n-1} \cdots \frac{n+1-\frac{\epsilon n}{2}}{n+1} \le \left(1-\frac{\epsilon}{4}\right)^n
+    \]
+    
+    由于 $|\{h \cap (S \cup S') \mid h \in \mathcal{H}\}| \le \pi_{\mathcal{H}}(2n)$，由 Union Bound 得
+    \[
+        \Pr[B] \le \pi_{\mathcal{H}}(2n) \cdot \left(1-\frac{\epsilon}{4}\right)^n \le \pi_{\mathcal{H}}(2n) \e^{-\frac{\epsilon n}{4}}
+    \]
+    
+    令 $\pi_{\mathcal{H}}(2n) \e^{-\frac{\epsilon n}{4}} \le \frac{\delta}{2}$，解得
+    \[
+        n \ge \frac{4}{\epsilon} \left(\log (2\pi_{\mathcal{H}}(2n)) + \log \frac{2}{\delta}\right)
+    \]
+    
+    注：书上的 Bound 是 $\frac{2}{\epsilon} (\dots)$。
+    它是考虑 $k$ 个“坏点”全分到 $S'$ 的概率不超过 $(1/2)^k$。这里使用的证明技巧被称为 ``double sampling''，把一个无穷大的采样空间巧妙地转化成了有限的。
+\end{proof}
+
+\begin{corollary}
+    $|S| = O\left(\frac{1}{\epsilon} (VC(\mathcal{H}) \log \frac{1}{\epsilon} + \log \frac{1}{\delta})\right)$ 时，至少有 $1-\delta$ 的概率，
+    $\forall h \in \mathcal{H}, \Err_S(h)=0 \implies \Err_{\mathcal{D}}(h) < \epsilon$。
+\end{corollary}
+
+\begin{proof}
+    利用 $\pi_{\mathcal{H}}(n) = O(n^d)$ 和 $n=a \log n \Rightarrow n \ge c a \log a$ 在两边消去 $n$。
+\end{proof}
+
+~
+
+\section{从在线学习到博弈}
+
+\subsection{在线学习} ~
+
+我们最初的情景是，有几位专家为我们提供建议，我们需要作出决策。已知几位专家在前 $t$ 天的建议，前 $t$ 天的结果，和几位专家在 $t+1$ 天的建议，需要一个算法来输出 $t+1$ 天的决策。
+
+如果存在 perfect expert（不会犯错），那么我们可以采用下面的算法：
+
+\begin{algorithm}[h]
+    \caption{majority 算法}
+    \begin{algorithmic}[1]
+        \For{$t = 1, 2, \dots$}
+            \State 在前 $t - 1$ 天全对的专家中取多数
+        \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    有 $n$ 位专家，以上算法犯错误次数不超过 $\log n$。
+\end{theorem}
+
+\begin{proof}
+    每次犯错至少有一半的专家被排除。
+\end{proof}
+
+如果 perfect expert 不存在？我们引入权重：
+
+\begin{algorithm}[h]
+    \caption{weighted majority 算法}
+    \begin{algorithmic}[1]
+        \State 初始化所有专家权重为 $1$
+        \Loop
+            \State 选择权重之和最大的建议
+            \State 如果犯错，权重 $\times \frac{1}{2}$
+        \EndLoop
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    设有 $n$ 位专家，算法的犯错误次数为 $M$，而犯错误最少的专家的犯错次数为 $m$，上面的算法可以保证
+    \[
+        M \le \frac{\ln n + m \ln 2}{\ln 4/3}
+    \]
+\end{theorem}
+
+\begin{proof}
+    每次犯错意味着权重之和过半的建议是错的。因此至少一半的权重被惩罚，总权重至少减少 25\%。$M$ 次犯错后总权重 $\le n \cdot (3/4)^M$。
+    
+    同时总权重 $\ge$ 当前最好的那位专家的权重 $= (1/2)^m$。
+    
+    $\therefore n(3/4)^M \ge (1/2)^m$ 整理即可。
+    
+    注：$1/2$ 可换成 $1-\epsilon$，此时解不等式 $n(1-\frac{\epsilon}{2})^M \ge (1-\epsilon)^m$ 即可。
+\end{proof}
+
+另一种策略：
+
+\begin{algorithm}[h]
+    \caption{randomized weighted majority 算法}
+    \begin{algorithmic}[1]
+        \State 初始化所有专家权重为 $1$
+        \Loop
+            \State 将权重之和作为概率来选取建议
+            \State 如果犯错，权重 $\times (1 - \epsilon)$
+        \EndLoop
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    设有 $n$ 位专家，算法的期望犯错误次数为 $M$，而犯错误最少的专家的期望犯错次数为 $m$，上面的算法可以保证
+    \[
+        M \le \frac{\ln n - m \ln(1-\epsilon)}{\epsilon} \approx (1+\frac{\epsilon}{2})m + \frac{1}{\epsilon} \ln n
+    \]
+\end{theorem}
+
+\begin{proof}
+    第 $t$ 天犯错的概率为为
+    \[
+        F_t = \frac{W_{True}}{W_{True} + W_{False}}
+    \]
+    
+    更新前后的期望权重和之比为
+    \[
+        \frac{W_{True} + (1-\epsilon)W_{False}}{W_{True} + W_{False}} = 1 - \epsilon F_t
+    \]
+    
+    $M = \sum_t F_t$，于是 $W \le n(1-\epsilon F_1) \dots \le n \e^{-\epsilon(F_1 + \dots)} = n \e^{-\epsilon M}$。
+    
+    同时 $W \ge (1-\epsilon)^m$。
+    
+    $\therefore n \e^{-\epsilon M} \ge (1-\epsilon)^m$。整理即证。
+\end{proof}
+
+我们将上面的算法严格化地表述。设 $w_i(t)$ 为 $t$ 时刻专家 $i$ 的权重，引入损失函数 $l$，$l_t(i)$ 为 $t$ 时刻专家 $i$ 的损失。
+
+\begin{algorithm}[h]
+    \caption{randomized weighted majority 算法（01 损失）}
+    \begin{algorithmic}[1]
+        \For{$t=1, \dots, T$}
+            \State 选择 $\hat{i}_t \leftarrow \dfrac{w_i(t)}{\sum_{j \in I} w_j(t)}$
+            \For{$i=1, \dots, n$}
+                \State 计算损失 $l_t(i)$
+                \State 更新 $w_i(t+1) = w_i(t) (1-\epsilon)^{l_t(i)}$
+            \EndFor
+        \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
+如果损失函数是连续的，$l_t(i) \in [0, \rho]$，只用修改一下更新规则：
+
+\begin{algorithm}[h]
+    \caption{randomized weighted majority 算法（连续损失）}
+    \begin{algorithmic}[1]
+        \For{$t=1, \dots, T$}
+            \State 选择 $\hat{i}_t \leftarrow \dfrac{w_i(t)}{\sum_{j \in I} w_j(t)}$
+            \For{$i=1, \dots, n$}
+                \State 计算损失 $l_t(i)$
+                \State 更新 $w_i(t+1) = w_i(t) \e^{-\epsilon l_t(i)}$
+            \EndFor
+        \EndFor
+    \end{algorithmic}
+\end{algorithm}
+
+此时可以证明：
+
+\begin{theorem}
+    设有 $n$ 位专家，算法的期望犯错误次数为 $M$，而犯错误最少的专家的期望犯错次数为 $m$，上面的算法可以保证
+    \[
+        M - m \le \frac{\ln n}{\epsilon} + T\epsilon
+    \]
+\end{theorem}
+
+\begin{proof}
+    证明被留做了作业题，关键还是总权重 $\ge$ 个人权重。
+\end{proof}
+
+\subsection{纳什均衡和 Minimax 定理} ~
+
+上述在线学习算法在博弈论中有神奇的应用，它可以给出一种构造性的收敛到纳什均衡的策略，从而证明 Minimax 定理：
+
+\begin{theorem}
+    设 $V$ 是零和博弈的 $n \times n$ 矩阵，有
+    \[
+        \min_p \max_q p^\top V q = \max_q \min_p p^\top V q
+    \]
+\end{theorem}
+
+\begin{proof}
+    让玩家采取 randomized weighted majority 策略，对手每次采取 best response：
+    \begin{itemize}[noitemsep]
+        \item[1.] 初始每一行有权重 $w_1(i)=1$。
+        \item[2.] 随机选择 $i_t \leftarrow \dfrac{w_t(i)}{\sum_j w_t(j)}$。
+        \item[3.] 对手采取最佳选择 $j_t = \arg\max_j V_{i_t,j}$。
+        \item[4.] 更新 $w_{t+1}(i) = w_t(i) \e^{-\epsilon V_{i，j_t}}$。
+    \end{itemize}
+    
+    上面的算法分析告诉我们：
+    \[
+        \frac{1}{T} \sum_t p_t^\top V q_t \le \frac{1}{T} \min_p \sum_t p^\top V q_t + O\left(\frac{1}{\sqrt{T}}\right)
+    \]
+    
+    (为什么？$\sum p_t^\top V q_t - \min_p \sum p^\top V q_t \le \frac{\ln n}{\epsilon} + T\epsilon$。令 $\epsilon = \sqrt{\frac{\ln n}{T}}$, 则为 $O(\sqrt{T})$)。
+    
+    记 $\bar{q} = \frac{1}{T} \sum q_t$，则
+    \[
+        \frac{1}{T} \min_p \sum_t p^\top V q_t = \min_p p^\top V \bar{q} \le \max_q \min_p p^\top V q
+    \]
+    \[
+        \therefore \frac{1}{T} \sum_t p_t^\top V q_t \le \max_q \min_p p^\top V q + O\left(\frac{1}{\sqrt{T}}\right)
+    \]
+    
+    同时，记 $\bar{p} = \frac{1}{T} \sum p_t$，由于 $q_t$ 是 best response：
+    \[
+        \frac{1}{T} \sum p_t^\top V q_t \ge \frac{1}{T} \max_q \sum_t p_t^\top V q = \max_q \bar{p}^\top V q \ge \min_p \max_q p^\top V q
+    \]
+    
+    最终
+    \[
+        \min_p \max_q p^\top V q \le \max_q \min_p p^\top V q + O\left(\frac{1}{\sqrt{T}}\right)
+    \]
+    
+    而天然地有 $\min \max p^\top V q \ge \max \min p^\top V q$，令 $T \to \infty$ 即知 $\min \max p^\top V q = \max \min p^\top V q$ 成立。
+\end{proof}
+
+\subsection{在线学习的感知机算法} ~
+
+算法流程和之前相同。只是此时不保证数据线性可分。
+
+定义 Hinge 损失：
+\[
+    L_{hinge}(w, x_t) = 
+    \begin{cases}
+        0, & \langle w, x_t \rangle y_t \ge 1 \\
+        1 - \langle w, x_t \rangle y_t, & \text{o.w.}
+    \end{cases}
+\]
+
+\begin{theorem}
+    算法过程中犯错误次数不超过
+    \[
+        \min_{w^*} (r^2 \|w^*\|^2 + 2(L_{hinge}(w^*, x_1) + \dots + L_{hinge}(w^*, x_T)))
+    \]
+    其中 $r = \max_t \|x_t\|$。
+\end{theorem}
+
+\begin{proof}
+    和之前的分析过程是完全类似的，变化的是
+    \[
+        \langle w + y_t x_t, w^* \rangle - \langle w, w^* \rangle \ge 1 - L_{hinge}(w^*, x_t)
+    \]
+    $m$ 次更新后
+    \[
+        \langle w, w^* \rangle \ge m - L_{hinge}(w, x_1) - \dots - L_{hinge}(w, x_T)
+    \]
+    同时和之前一样可以推出 
+    \[
+        \|w\| \le r\sqrt{m} \Rightarrow \langle w, w^* \rangle \le r\sqrt{m} \cdot \|w^*\|
+    \]
+    于是
+    \[
+        \sum L_{hinge} \ge m - r\sqrt{m}\|w^*\|
+    \]
+    解此二次方程即可。
+\end{proof}
+
+\section{Boosting}
+
+Boosting 是一种把若干 weak learner “合成”较强的分类器的方式。所谓的 weak，指的是正确率 $\ge \frac{1}{2} + \gamma$，其中 $\gamma$ 是很小的正数，也就是在数据上表现地只比乱猜略好一点。
+
+假设有训练点 $x_1, \dots, x_n$。 
+
+我们有一个 Oracle，能够从训练点和它们的权重中进行学习，返回一个 weak learner：
+\begin{itemize}[noitemsep]
+    \item[] Input: 一个 $x_1, \dots, x_n$ 上的分布 $\mathcal{D}$
+    \item[] Output: 一个 weak learner $h_\mathcal{D}$ 
+\end{itemize}
+
+待定一个常数 $\alpha$，Boosting 的算法流程如下：
+
+\begin{algorithm}[h]
+    \caption{Boosting}
+    \begin{algorithmic}[1]
+        \State $w_1(i) = 1, \forall i$
+        \For{$t=1, \dots, T$}
+            \State $h_t \leftarrow \text{Oracle}\left(\left(\dfrac{w_t(i)}{\sum w_t(j)}\right)_i\right)$
+            \For{$i=1, \dots, n$}
+                \If{$h_t(i) \ne y$}
+                    \State $w_{t+1}(i) = w_t(i) \cdot \alpha$
+                \EndIf
+            \EndFor
+        \EndFor
+        \State $h = \text{Majority}(h_1, \dots, h_T)$
+        \State \Return $h$
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    对 $\alpha = \frac{1+2\gamma}{1-2\gamma}$，上面的算法一定能在有限步内得到正确（在训练集上错误为 $0$）的 $h$。
+\end{theorem}
+
+\begin{proof}
+    当 $h$ 犯错时，至少 $\frac{T}{2}$ 的 weak learner 犯错。仍然利用总权重 $\ge$ 个人权重，
+    \[
+        n\left(\left(\frac{1}{2}+\gamma\right) + \alpha\left(\frac{1}{2}-\gamma\right)\right)^T \ge \alpha^{T/2}
+    \]
+    
+    令 $\alpha = \frac{1+2\gamma}{1-2\gamma}$，则
+    \[
+        \left(\frac{1+2\gamma}{1-2\gamma}\right)^{T/2} \le n(1+2\gamma)^T
+    \]
+    \[
+        \Rightarrow (1-4\gamma^2)^{T/2} \ge \frac{1}{n}
+    \]
+    
+    $T \to +\infty$ 时不可能成立。
+\end{proof}
+
+注：也可以从博弈的角度来看。矩阵每一行是 $h_t$。矩阵中的值为 $1[h_t(x_i) \ne y_i]$。weak learner 说明 $\forall q, \exists p, p^\top V q \le \frac{1}{2} - \gamma$，故
+\[
+    \max_q \min_p p^\top V q \le \frac{1}{2} - \gamma
+\]
+由 Minimax 定理，
+\[
+    \min_p \max_q p^\top V q \le \frac{1}{2} - \gamma
+\]
+因此 $\exists p^*, \forall q, p^{*\top} V q \le \frac{1}{2} - \gamma$。因而 $p^*V$ 的每个分量均应 $\le \frac{1}{2} - \gamma$，故 $p^*$ 是全对的。

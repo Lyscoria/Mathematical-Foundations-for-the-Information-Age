@@ -1,0 +1,266 @@
+\documentclass[11pt]{article}
+\usepackage[UTF8]{ctex}
+\usepackage[a4paper]{geometry}
+\geometry{left=2.0cm,right=2.0cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{comment}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{diagbox}
+\usepackage{amsmath,amsfonts,graphicx,amssymb,bm,amsthm}
+%\usepackage{algorithm,algorithmicx}
+\usepackage[ruled]{algorithm2e}
+\usepackage[noend]{algpseudocode}
+\usepackage{fancyhdr}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usetikzlibrary{arrows,automata}
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks=true,
+	linkcolor=blue,
+	filecolor=blue,      
+	urlcolor=blue,
+	citecolor=cyan,
+}			
+
+\setlength{\headheight}{14pt}
+\setlength{\parindent}{0 in}
+\setlength{\parskip}{0.5 em}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem*{definition*}{Definition}
+
+\newenvironment{problem}[2][Problem]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\hfill$\blacktriangleleft$\end{trivlist}}
+\newenvironment{answer}[1][Answer]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1.}\hskip \labelsep]}{\hfill$\lhd$\end{trivlist}}
+
+\newcommand\E{\mathbb{E}}
+\newcommand\per{\mathrm{per}}
+
+
+\title{Homework \#2}
+\usetikzlibrary{positioning}
+
+\begin{document}
+
+\pagestyle{fancy}
+\lhead{Peking University}
+\chead{}
+\rhead{Mathematical Foundations for the Information Age, 2025 Fall}
+
+\begin{center}
+    {\LARGE \bf Homework \#3}\\
+    {Due: 2025-12-24 23:59 \quad$|$\quad 6 Problems, 100 Pts}\\
+    {Name: 李思成, ID: 2400017787}            % Write down your name and ID here.
+\end{center}
+
+\begin{problem}{1 (15')}
+Find out and prove the VC-dimension of the hypothesis class $\mathcal{H}_n$ on instance space $\{0,1\}^n$ ($n\geq 1$) where
+\begin{align*}
+    \mathcal{H}_n=\{\{\bm x\in \{0,1\}^n \mid f_S(\bm x)=-1\}\mid S\subseteq \{1,2,\cdots,n\}\}.
+\end{align*}
+Here, $f_S(\bm x): \{0,1\}^n\to\{-1,+1\}$ is defined as
+\begin{align*}
+    f_S(\bm x) := \begin{cases}
+        -1,  & S = \varnothing; \\ 
+        (-1)^{\prod_{j\in S}x_j}, &  S \ne \varnothing.
+    \end{cases}
+\end{align*}
+Express the answer as a function of $n$.
+\end{problem}
+
+\begin{answer} ~
+    The VC-dimension is $n$.
+
+    Let $A \subseteq \{0, 1\}^n$ and $A = \{\bm x_1, \dots, \bm x_m\}$, and suppose $A$ can be shattered by $\mathcal{H}$. Then, for every $k \in \{0, 1\}$, there exists $S \subseteq \{1, \dots, n\}$ such that $f_S(\bm x_k) = +1$ and $\forall j \neq k, f_S(\bm x_j) = -1$. From the definition of $f_S$, we can deduce that $\exists i_k \in \{1,\dots,n\}$ such that $x_k^{(i_k)} = 0$ while $\forall j \neq k, x_j^{(i_k)} = 1$. Since $i_k$ are pairwise different, $|A| \le n$, so the VC-dimension is no more than $n$.
+
+    Meanwhile, consider $A = \{\bm x_1, \dots, \bm x_n\}$, $\forall i, x_i^{(i)} = 0$ and $\forall j \neq i, x_i^{(j)} = 1$. If we want to find $S$ to make $f_S(\bm x_i) = +1$ for $i \in I \subseteq \{1, \dots, n\}$ and others $-1$, take $S = I$ is OK. As a result, the VC-dimension is $n$.
+\end{answer}
+
+
+\begin{problem}{2 (14')} The shatter function $\pi_\mathcal{H}(n)$ is the maximum number of subsets of any set $A$ of size $n$ that can be expressed as $A\cap h$ for $h\in \mathcal{H}$. Let $\mathcal{H}_1$ and $\mathcal{H}_2$ be two hypothesis classes and $\mathcal{H}=\{h_1\cap h_2\mid h_1\in \mathcal{H}_1,h_2\in \mathcal{H}_2\}$. Recall that we have proved $\pi_\mathcal{H}(n)\leq\pi_{\mathcal{H}_1}(n)\pi_{\mathcal{H}_2}(n)$ in class. 
+
+\begin{itemize}
+    \item [(1)] (6') Recall the Sauer's lemma we have learned in class. Sauer's lemma tells that for a hypothesis class $\mathcal{H}$ with VC-dimension $d$, $\pi_\mathcal{H}(m)\leq\sum_{i=0}^d\binom{m}{i}$. Prove that $\sum_{i=0}^d\binom{m}{i}\leq\left(\frac{\mathrm{e}m}{d}\right)^d$ when $m\geq d$.
+    \item [(2)] (8') For a hypothesis class $\mathcal{H}$ with VC-dimension $d$, define the hypothesis class $\mathcal{H}^k$ ($k\geq 2$) as
+    \begin{align*}
+        \mathcal{H}^k=\left\{\bigcap_{i=1}^k h_i\;\big|\; h_i\in \mathcal{H}\right\}.
+    \end{align*}
+    Prove that, the VC dimension of $\mathcal{H}^k$ is no more than $7dk\ln k$. You may use the assertions above. ($\ln 2\approx0.693,\;\mathrm{e}\approx2.718,\;\ln 7\approx 1.946,\;\ln\ln 2\approx-0.367$)
+\end{itemize}
+\end{problem}
+
+\begin{answer} ~
+    \begin{itemize}
+        \item[(1)] Use $\left(1 + \frac{1}{x}\right)^x \le \mathrm{e}$, 
+        \begin{align*}
+            \left(\frac{\mathrm{e}m}{d}\right)^d &\ge \left(\frac{m}{d}\left(1 + \frac{d}{m}\right)^{\frac{m}{d}}\right)^d \\
+            &= \left(\frac{m}{d}\right)^d \left(1 + \frac{d}{m}\right)^m \\
+            &\ge \left(\frac{m}{d}\right)^d \sum_{i=0}^d \binom{m}{i}\left(\frac{d}{m}\right)^i \\
+            &\ge \sum_{i=0}^d \binom{m}{i}
+            \end{align*}
+
+        \item[(2)] Suffices to show that $\pi_{\mathcal{H}_k}(n) < 2^n$ when $n > 7dk\ln k$. We have
+        \[\pi_{\mathcal{H}_k}(n) \le \left(\pi_{\mathcal{H}}(n)\right)^k \le \left(\frac{\mathrm{e}n}{d}\right)^{dk}\]
+        So only need to show
+        \[\left(\frac{\mathrm{e}n}{d}\right)^{dk} < 2^n \Longleftrightarrow dk\left(1 + \ln\frac{n}{d}\right) < n \ln 2\]
+        Take $n = 7dk\ln k$, it becomes
+        \[1 + \ln (7k \ln k) < 7\ln 2\ln k \Longleftrightarrow (7\ln 2 - 1)\ln k > 1 + \ln 7 + \ln\ln k \]
+        Use $7\ln 2 > 4.85, \ln 7 < 1.95, \ln\ln k \le \ln k - 1$, only need to show $2.85\ln k > 1.95$, which holds for $k \ge 2$.
+    \end{itemize}
+\end{answer}
+
+\begin{problem}{3 (16')} Consider the following randomized online learning algorithm for expert advice problem.
+    \begin{algorithm}[htbp]
+        \caption{Randomized online learning algorithm for expert advice}
+        Set a constant $\eta>0$, the number of experts $N$
+    
+        $\bm{L}_0\gets 0^N$ \hfill{$\triangleright$ Cumulative loss vector.}
+    
+        \For{$t=1,2,\cdots,T$}{
+            $W(t)=\sum_i\exp(-\eta\bm{L}_{t-1}(i))$ \hfill{$\triangleright$ Normalization coefficient.}
+    
+            Select the $i$-th expert with probability $\bm p_t(i)=\frac{\exp(-\eta\bm{L}_{t-1}(i))}{W(t)}$
+    
+            Observe the loss vector $\bm{l}_t\in[0,1]^N$ for each expert    \hfill{$\triangleright$ The loss is guaranteed in $[0,1]$.}
+    
+            Update the cumulative loss $\bm{L}_t\gets\bm{L}_{t-1}+\bm{l}_t$
+        }
+    \end{algorithm}
+    
+    The expected loss is $\sum_{t=1}^T\bm{p}_t^\top\bm{l}_t$. 
+    \begin{itemize}
+        \item [(1)] (7') Prove that, 
+        \begin{align*}
+            \frac{W(t+1)}{W(t)}=\bm{p}_t^\top\exp(-\eta\bm{l}_t).
+        \end{align*}
+        \item [(2)] (9') Prove the following upper bound for expected loss:
+        \begin{align*}
+            \sum_{t=1}^T\bm{p}_t^\top\bm{l}_t-\bm L_T(i)\leq\frac{\ln N}{\eta}+T\eta
+        \end{align*}
+        for any $i\in[N]$.
+        \item [] \textit{[Hint: Consider the potential function $\Phi_t=\frac{1}{\eta}\ln(W(t))$. You may find the following inequality useful: $\mathrm{e}^{-x}\leq 1-x+x^2,x>0$.]}
+    \end{itemize}
+\end{problem}
+
+\begin{answer} ~
+    \begin{itemize}
+        \item[(1)] 
+            \begin{align*}
+            \frac{W(t+1)}{W(t)} &= \frac{\sum_i \exp(-\eta\bm L_t(i))}{W(t)} = \sum_i \frac{\exp(-\eta \bm L_{t-1}(i)) \exp(-\eta \bm l_t(i))}{W(t)} \\
+            &= \sum_i \bm p_t(i) \exp(-\eta \bm l_t(i)) = \bm p_t^\top \exp(-\eta \bm l_t)
+            \end{align*}
+        \item[(2)] First, 
+            \begin{align*}
+            \frac{W(t+1)}{W(t)} &= \sum_i \bm p_t(i) \exp(-\eta \bm l_t(i)) \\
+            &\le \sum_i \bm p_t(i) (1 - \eta \bm l_t(i) + \eta^2 \bm l_t(i)^2) \\
+            &\le 1 - \eta \bm p_t^\top \bm l_t + \eta^2
+            \end{align*}
+            So
+            \begin{align*}
+            \ln W(T+1) &\le \ln \left(N \prod_{i=1}^T (1 - \eta \bm p_t^\top \bm l_t + \eta^2)\right) \\
+            &= \ln N + \sum_{i=1}^T \ln (1 - \eta \bm p_t^\top \bm l_t + \eta^2) \\
+            &\le \ln N + \sum_{i=1}^T (- \eta \bm p_t^\top \bm l_t + \eta^2) \\
+            &= \ln N - \eta \sum_{i=1}^T \bm p_t^\top \bm l_t + T\eta^2
+            \end{align*}
+            And $\forall i$, $W(T+1) \ge \exp(-\eta \bm L_T(i)) \Longrightarrow \ln W(T+1) \ge -\eta \bm L_T(i)$, as a result, 
+            \[\ln N - \eta \sum_{i=1}^T \bm p_t^\top \bm l_t + T\eta^2 \ge -\eta \bm L_T(i) \Longrightarrow \sum_{t=1}^T\bm{p}_t^\top\bm{l}_t-\bm L_T(i)\leq\frac{\ln N}{\eta}+T\eta\]
+    \end{itemize}
+\end{answer}
+
+\begin{problem}{4 (15')} 
+Consider the following boosting algorithm we learned in class. 
+
+\begin{algorithm}[H]
+    \caption{Boosting algorithm}
+    \KwIn{Number of iterations $M$ (where $M$ is odd), a sample $S$ of $n$ labeled examples $\bm x_1,\cdots,\bm x_n$ with labels $y_1,\cdots,y_n$, a $\gamma$-weak ($\gamma>0$) learner (i.e., an algorithm that given $n$ labeled examples and a non-negative weight $\bm w\in\mathbb{R}^n$, gives an hypothesis with at least $\frac12+\gamma$ accuracy on the weight $\bm w$).}
+
+    $\bm w_1\gets (1,1,\cdots,1)$ \hfill{$\triangleright$ Initialize each example $\bm x_i$ to have a weight $\bm w_{1}(i)=1$.}
+
+    \For{$t=1,2,\cdots,M$}{
+        Call the $\gamma$-weak learner on the sample $S$ with weight $\bm w_t$ to get the hypothesis $h_t$.
+
+        \For{$i=1,2,\cdots,n$}{
+            \eIf{$\bm h_t(x_i)\ne y_i$}{$\bm w_{t+1}(i)\gets \bm w_t(i)\cdot\frac{\frac12+\gamma}{\frac12-\gamma}$}{$\bm w_{t+1}(i)=\bm w_t(i)$}
+        }
+    }
+
+    \KwOut{The classifier $\mathrm{Maj}(h_1,\cdots,h_M)$.}
+\end{algorithm}
+
+Assume hypothesis $h_t$ has error rate $\beta_t$ on the weighted sample $(S,\bm w_t)$.
+\begin{itemize}
+    \item [(1)] (10') Suppose $\beta_t$ is much less than $\frac12-\gamma$. Then, after the booster multiples the weight of misclassified examples by $\alpha=\frac{\frac{1}{2}+\gamma}{\frac{1}{2}-\gamma}$, hypothesis $h_t$ will still have error less than $\frac12-\gamma$ under the new weights. This means that $h_t$ could be given again to the booster (perhaps for several times in a row). Calculate, as a function of $\alpha$ and $\beta_t$, how many times in a row $h_t$ could be given to the booster before its error rate rises to above $\frac12-\gamma$. 
+    \item [(2)] (5') Modify the boosting algorithm in the following way: During the iteration, multiply the weight of each example that was misclassified by $h_t$ by $\alpha_t=\frac{1-\beta_t}{\beta_t}$, instead of $\alpha=\frac{\frac{1}{2}+\gamma}{\frac{1}{2}-\gamma}$. Prove that, $h_{t+1}\ne h_t$.
+\end{itemize}
+\end{problem}
+
+\begin{answer}
+    \begin{itemize}
+        \item[(1)] Let $W = \sum_i \bm w_t(i)$. Suppose $h_t$ is given back to the booster $k$ times, then its error rate
+        \[\beta_{t+k} = \frac{\beta_t W \cdot \alpha^k}{\beta_t W \cdot \alpha^k + (1 - \beta_t)W} = \frac{\beta_t \alpha^k}{\beta_t \alpha^k + 1 - \beta_t}\]
+        Let $\beta_{t+k} = \frac{1}{2} - \gamma$, then
+        \[\beta_t \alpha^k = (\frac{1}{2} - \gamma)(\beta_t \alpha^k + 1 - \beta_t) \Longleftrightarrow \left(\frac{1}{2} + \gamma\right)\beta_t\alpha^k = \left(\frac{1}{2} - \gamma\right)(1 - \beta_t)\]
+        \[\Longrightarrow \beta_t \alpha^{k+1} = 1 - \beta_t \Longrightarrow k = \log_\alpha \left(\frac{1 - \beta_t}{\beta_t}\right) - 1\]
+        \item[(2)] According to (1), we have $k = 1 - 1 = 0$, so $h_t$ can not be given again to the booster, $h_{t+1} \neq h_t$. (If $h_{t+1} = h_t$, $\beta_{t+1} = \frac{1}{2} > \frac{1}{2} - \gamma$.)
+    \end{itemize}
+\end{answer}
+
+\begin{problem}{5 (20')}
+A bipartite graph is a graph whose vertices can be divided into two disjoint and independent sets $U$ and $V$ such that every edge connects a vertex in $U$ to one in $V$. Find out and prove the threshold for $\mathcal{G}(n,p)$ to be bipartite.
+
+\textit{[Hint: The definition of bipartite graph is equivalent to a graph that does not contain any odd-length cycles.]}
+\end{problem}
+
+\begin{answer}
+    The threshold is $p = \frac{1}{n}$.
+
+    First, when $p \gg \frac{1}{n}$, we have learned in class that $\Pr[\mathcal{G}(n, p)\text{ contains triangles}] \to 1$, so (use the hint) $\Pr[\mathcal{G}(n,p)\text{ is bipartite}] \to 0$.
+
+    When $p \ll \frac{1}{n}$, we prove a stronger conclusion: $\Pr[\mathcal{G}(n,p)\text{ contains cycles}] \to 0$. Let $X_k$ be the number of cycles with length $k$, then
+    \[\E[X_k] = \binom{n}{k} \frac{(k-1)!}{2} p^k \le \frac{n^k}{2k} p^k\]
+    Let $X$ be the total number of cycles, then
+    \[\E[X] = \sum_{k=3}^n \E[X_k] \le \sum_{k=3}^n \frac{(np)^k}{2k} \le \sum_{k=3}^\infty (np)^k = \frac{(np)^3}{1 - np} \to 0\]
+    So $\Pr[\mathcal{G}(n,p)\text{ contains cycles}] = \Pr[X \ge 1] \le \E[X] \to 0$.
+\end{answer}
+
+\begin{problem}{6 (20')}
+A vertex is called an isolated vertex if it does not have any edges. Prove that, the threshold for $\mathcal{G}(n,p)$ of the existence of isolated vertex is $p=\frac{\ln n}{n}$.
+\end{problem}
+
+\begin{answer}
+    Let $X$ be the number of isolated vertices. And let $I_i \in \{0, 1\}$, $I_i = 1$ if and only if vertex $i$ is an isolated vertex. Then
+    \[\E[X] = \sum_{i=1}^n \E[I_i] = \sum_{i=1}^n (1-p)^{n-1} = n(1-p)^{n-1}\]
+    When $p \gg \dfrac{\ln n}{n}$, $\mathrm{e}^{-np} \ll \dfrac{1}{n}$, so with Markov's bound, 
+    \[\displaystyle{\E[X] \le n\mathrm{e}^{-(n-1)p} = n \mathrm{e}^{-p} \mathrm{e}^{-np} \to 0}\].
+    When $p \ll \dfrac{\ln n}{n}$, for all $i \neq j$, 
+    \begin{align*}
+        \Pr[I_i I_j = 1] &= \Pr[I_i = 1] \Pr[I_j = 1 \mid I_i = 1] \\
+        &= (1-p)^{n-1} (1-p)^{n-2} \\
+        &= (1-p)^{2n-3}
+    \end{align*}
+    So
+    \begin{align*}
+        \E[X^2] &= \E\left[\sum_i I_i^2 + \sum_{i \neq j} I_i I_j\right] \\
+        &= \sum_i \E[I_i^2] + \sum_{i\neq j} \E[I_i I_j] \\
+        &= n(1-p)^{n-1} + n(n-1)(1-p)^{2n-3}
+    \end{align*}
+    $p \ll \frac{\ln n}{n} \Longrightarrow n(1-p)^n \approx n\mathrm{e}^{-np} \to +\infty$, so
+    \begin{align*}
+        \frac{Var(X)}{\E[X]^2} &= \frac{\E[X^2] - \E[X]^2}{\E[X]^2}\\
+        &= \frac{n(1-p)^{n-1} + n(n-1)(1-p)^{2n-3} - n^2(1-p)^{2n-2}}{n^2(1-p)^{2n-2}} \\
+        &= \frac{1}{n} \frac{1}{(1-p)^{n-1}} + \frac{n-1}{n} \frac{1}{1-p} - 1 \\
+        &\to 0 + 1 - 1 = 0
+    \end{align*}
+    As a result, with Chebyshev's Bound, 
+    \[\Pr[X = 0] \le \Pr\left[|X - \E[X]| \ge \E[X]\right] \le  \frac{Var(X)}{\E[X]^2} \to 0\]
+\end{answer}
+
+\end{document}

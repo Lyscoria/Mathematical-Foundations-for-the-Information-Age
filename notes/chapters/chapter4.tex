@@ -1,0 +1,294 @@
+\chapter{流和采样算法}
+
+\section{流算法（Streaming）}
+
+Streaming 指的大约是，我们需要一个算法对输入序列 $a_1, \dots, a_n$ 给出输出，但是算法可利用的空间非常小，不能够读入全部的 $a_i$，只能保存非常少的信息，每次读入一个 $a_i$ 然后丢弃。下面是一个简单的例子：
+
+\subsection{加权采样} ~
+
+给定 $a_1, \dots, a_n$，要求最终以 $\frac{a_{i}}{\sum_{j}a_{j}}$ 的概率输出 $a_i$。
+
+\begin{algorithm}[h]
+    \caption{}
+    \begin{algorithmic}[1]
+        \State $S = a_{1}, a = a_{1}$
+        \For{$i = 2, \dots, n$}
+            \State 以 $\dfrac{a_{i}}{S+a_{i}}$ 的概率令 $a \leftarrow a_{i}$
+            \State $S \leftarrow S + a_{i}$
+        \EndFor
+        \State Output $a$
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{proof}
+    归纳法。假设 $t$ 时刻时 $\forall i \le t$：
+    \[
+        \Pr[a=a_{i}]=\frac{a_{i}}{S_{t}}
+    \]
+    那么 $t+1$ 时刻，
+    \[
+        \Pr[a=a_{t+1}]=\frac{a_{t+1}}{S_{t} + a_{t+1}}=\frac{a_{t+1}}{S_{t+1}}
+    \]
+    对于 $i \le t$，
+    \[
+        \Pr[a=a_{i}]=\frac{a_{i}}{S_{t}}\left(1-\frac{a_{t+1}}{S_{t+1}}\right)=\frac{a_{i}}{S_{t}}\frac{S_{t}}{S_{t+1}}=\frac{a_{i}}{S_{t+1}}
+    \]
+\end{proof}
+
+\subsection{最常出现的元素} ~
+
+设有 $m$ 位候选人（从 $1$ 到 $m$），$a_{i}$ ($1\le a_{i}\le m$) 是对 $m$ 位候选人的投票。若有人票数过半则输出该人；否则输出 0。
+
+下面给出一个略弱化的算法（若有人票数过半则输出该人，否则输出任意一个人），这个算法只保证不会输出错误的人；想要确定结果的话还需要重新遍历一遍。
+
+\begin{algorithm}[h]
+    \caption{Majority Vote}
+    \begin{algorithmic}[1]
+        \State $a = a_{1}$, $cnt = 1$
+        \For{$i = 2, \dots, n$}
+            \If{$cnt == 0$}
+                \State $a = a_{i}$, $cnt = 1$
+            \Else
+                \If{$a == a_{i}$}
+                    \State $cnt ++$
+                \Else
+                    \State $cnt --$
+                \EndIf
+            \EndIf
+        \EndFor
+        \State \Return $a$
+    \end{algorithmic}
+\end{algorithm}
+
+将算法想象成打擂台即可，很形象。
+
+\begin{corollary}
+    若要求输出票数 $> \frac{n}{k+1}$ 的，那只用改成 $k$ 个擂台即可。若已有擂台则该擂台 $cnt++$，若有空擂台则占，否则所有擂台 $cnt--$。
+\end{corollary}
+
+\subsection{哈希与不同元素计数} ~
+
+输出 $a_1, \dots, a_n$ 中不同元素的个数。
+
+对于一个确定性算法，假设 $a_i \in \{1, \dots, m\}$，那么算法显然至少需要 $O(m)$ 的空间。下面尝试给出一个非确定的算法来节省空间。首先，我们有如下的观察：
+
+\begin{lemma}
+    设 $a_1, \dots, a_k \sim \text{Unif}([0, 1])$，则
+    \[
+        \E[\min\{a_{1}, \dots, a_{k}\}]=\frac{1}{k+1}
+    \]
+\end{lemma}
+
+\begin{proof}
+    $\Pr[\mathrm{min} \le x] = 1 - (1 - x)^k$，积分。
+\end{proof}
+
+类似地，如果 $a_1, \dots, a_k \sim \text{Unif}(\{1, \dots, m\})$，那么它的最小值的期望大约是 $\frac{m}{d+1}$，其中 $d = |\{a_1, \dots, a_k\}|$。于是朴素的想法是，只维护最小值 $\mathrm{min}$，最终输出 $\frac{m}{\mathrm{min}} - 1$。显然，如果数据并不是均匀分布的，这个算法就会表现得不太好，接下来采取的办法是使用哈希函数来尽可能地把原数据映射地均匀。
+
+取大素数 $M > m$，再任取 $a, b \in \{0, \dots, M - 1\}$，定义 $h_{ab}(x) = ax + b \mod M$。这样定义的哈希函数有很好的性质：
+
+\begin{lemma}
+    对于随机的 $a, b$，若 $x_{1}\ne x_{2}$，那 $h_{ab}(x_1)$ 和 $h_{ab}(x_2)$ 是独立的。i.e.
+    \[
+        \Pr[h(x_1)=y_1 \land h(x_2)=y_2] = \Pr[h(x_1)=y_1] \cdot \Pr[h(x_2)=y_2]
+    \]
+\end{lemma}
+
+\begin{proof}
+    \[
+        h(x_{i})=y_{i} \iff ax_{i}+b \equiv y_i \pmod M
+    \]
+    \[
+        \left\{ \begin{aligned} ax_1 + b &\equiv y_1 \pmod M \\ ax_2 + b &\equiv y_2 \pmod M \end{aligned} \right.
+    \]
+    依中国剩余定理（实际上是线性方程组），方程组有唯一解 $a^*, b^*$。
+    \begin{align*}
+        \Pr[h(x_{1})=y_{1} \land h(x_{2})=y_{2}] &= \Pr[a=a^{*}, b=b^{*}] \\
+        &= \Pr[a=a^{*}] \cdot \Pr[b=b^{*}] \\
+        &= \frac{1}{M^{2}} \\
+        &= \Pr[h(x_1)=y_1] \cdot \Pr[h(x_2)=y_2]
+    \end{align*}
+\end{proof}
+
+\begin{theorem}
+    设 $\{b_1, \dots, b_d\}$ 为 $a_1, \dots, a_n$ 中互不相同的元素。
+    随机某个 $h\in\{h_{ab}\}$，记 $\min = \min\{h(b_1), \dots, h(b_d)\}$。那么至少有 $\frac{2}{3} - \frac{d}{M}$ 的概率使得
+    \[
+        \frac{d}{6} \le \frac{M}{\min} \le 6d
+    \]
+\end{theorem}
+
+\begin{proof}
+    $\frac{d}{6} \le \frac{M}{\min} \le 6d \iff \frac{M}{6d} \le \min \le \frac{6M}{d}$。
+
+    先考虑左半边，是简单的 Union Bound：
+    \begin{align*}
+        \Pr\left[\min \le \frac{M}{6d}\right] &= \Pr\left[\exists k, h(b_{k}) \le \frac{M}{6d}\right] \\
+        &\le d \cdot \frac{1}{M} \cdot \left\lceil\frac{M}{6d}\right\rceil \quad \left(\approx d \cdot \frac{1}{6d} = \frac{1}{6}\right) \\
+        &\le d\left(\frac{1}{6d} + \frac{1}{M}\right) \\
+        &= \frac{1}{6} + \frac{d}{M}
+    \end{align*}
+
+    再考虑右半边：
+    \begin{align*}
+        \Pr\left[\min \ge \frac{6M}{d}\right] &= \Pr\left[\forall k, h(b_{k}) \ge \frac{6M}{d}\right]
+    \end{align*}
+
+    令 $Y := \sum Y_{k}$，其中
+    \[
+        Y_{k} := \begin{cases} 1 & o.w. \\ 0 & h(b_{k}) > \frac{6M}{d} \end{cases}
+    \]   
+
+    \begin{align*}
+        \Pr\left[\forall k, h(b_{k}) \ge \frac{6M}{d}\right] &= \Pr[Y=0] \\
+        &\le \Pr[|Y-\E[Y]| \ge \E[Y]] \\
+        &\le \frac{\Var(Y)}{\E[Y]^{2}} = \frac{d \cdot \Var(Y_{1})}{d^{2}\E[Y_{1}]^{2}} \\
+        &= \frac{1}{d}\frac{\E[Y_{1}^{2}]-\E[Y_{1}]^{2}}{\E[Y_{1}]^{2}} \le \frac{1}{d}\frac{\E[Y_{1}]}{\E[Y_{1}]^{2}} \\
+        &= \frac{1}{d\E[Y_{1}]} \le \frac{1}{6}
+    \end{align*}
+
+    最终
+    \begin{align*}
+        \Pr\left[\min < \frac{M}{6d} \lor \min > \frac{6M}{d}\right] &\le \frac{1}{6} + \frac{1}{6} + \frac{d}{M} = \frac{1}{3} + \frac{d}{M}
+    \end{align*}
+\end{proof}
+
+\subsection{频数的二阶矩} ~
+
+我们关心 $a_1, \dots, a_n$ 的 ``unbalanced'' 程度。设 $f_s$ 为 $s$ 出现的次数，估计 $\sum f_s^2$。
+
+\begin{algorithm}[h]
+    \caption{}
+    \begin{algorithmic}[1]
+        \State Alg. 随机一个哈希函数 $h: \{1, \dots, m\} \to \{-1, 1\}$。
+        \State $\mathrm{Sum} = 0$
+        \For{$i = 1, \dots, n$}
+            \State $\mathrm{Sum} += h(a_{i})$
+        \EndFor
+        \State \Return $\mathrm{Sum}^{2}$
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    如果 $h$ 同之前一样是“两两独立”的，上述算法最终能给出 $\sum f_s^2$ 的无偏估计。
+\end{theorem}
+
+\begin{proof}
+    算法最后实际输出了 $(\sum h(s)f_{s})^2$。
+    \begin{align*}
+        \E\left[\left(\sum h(s)f_{s}\right)^{2}\right] &= \E\left[\sum_{s, s^{\prime}}h(s)h(s^{\prime})f_{s}f_{s^{\prime}}\right] \\
+        &= \E\left[\sum_{s}f_{s}^{2}\right] + \E\left[\sum_{s\ne s^{\prime}}h(s)h(s^{\prime})f_{s}f_{s^{\prime}}\right] \\
+        &= \sum_{s}f_{s}^{2}
+    \end{align*}
+    (因为对于 $s \ne s'$，$\E[h(s)h(s')] = \E[h(s)]\E[h(s')] = 0$)。
+\end{proof}
+
+如果要分析这个算法的好坏，那么就需要计算方差；此时“两两独立”就不太够了，需要“四四独立”。此处略去。
+
+\section{矩阵采样}
+
+\subsection{Sampling} ~
+
+本节的目标是对两个矩阵 $A$ 和 $B$ 进行采样，尽可能地去近似乘积 $AB$。令 $a_k$ 为 $A$ 的列向量，$b_k^\top$ 为 $B$ 的行向量，
+\[
+    AB = \sum_{k} a_k b_k^\top
+\]
+
+我们希望对 $1, \dots, n$ 赋予权重 $\Pr[k=i]=p_{i}$，采样一个 $k \leftarrow \{1, \dots, n\}$，然后计算
+\[
+    X = \frac{1}{p_{k}}a_{k}b_{k}^{\top}
+\]
+
+此时的 $X$ 已经是 $AB$ 的一个无偏估计：
+
+\[
+    \E[X] = \sum p_{k} \cdot \frac{1}{p_{k}}a_{k}b_{k}^\top = AB
+\]
+
+问题是，怎样取 $p_k$ 能够让 $\E[\|X-AB\|_{F}^{2}]$ 最小？首先，有如下观察：
+
+\begin{align*}
+    \E[\|X-AB\|_{F}^{2}] &= \E\left[\sum_{ij}(X_{ij}-\E[X_{ij}])^{2}\right] \\
+    &= \sum_{ij}\Var(X_{ij}) \\
+    &= \sum_{ij}(\E[X_{ij}^{2}]-\E[X_{ij}]^{2}) \\
+    &= \E[\|X\|_{F}^{2}] - \|AB\|_{F}^{2}
+\end{align*}
+
+所以只需要最小化 $\E[\|X\|_{F}^{2}]$。而
+\[
+    \E[\|X\|_{F}^{2}] = \sum_{k} p_{k} \frac{1}{p_{k}^{2}} \|a_{k}b_{k}^\top\|_{F}^{2} = \sum_{k} \frac{1}{p_{k}} \|a_{k}\|^{2} \|b_{k}\|^{2}
+\]
+
+由 Cauchy 不等式，最好的做法正是 $p_{k} \propto \|a_{k}\| \|b_{k}\|$。
+
+当 $B=A^\top$ 时，$p_{k} \propto \|a_{k}\|^{2}$，即 $p_{k} = \frac{\|a_{k}\|^{2}}{\|A\|_{F}^{2}}$。
+
+即使 $B \ne A^\top$ ，为了上界的简洁依然可以如上取 $p_k$。此时
+\[
+    \E[\|X-AB\|_{F}^{2}] \le \|A\|_{F}^{2}\|B\|_{F}^{2}
+\]
+
+采取多次采样可以进一步降低上界。设 $s$ 次采样得到 $X_{1}, \dots, X_{s}$，取 $X=\frac{1}{s}\sum X_{i}$。那么就有
+\[
+    \E[\|X-AB\|_{F}^{2}] \le \frac{1}{s}\|A\|_{F}^{2}\|B\|_{F}^{2}
+\]
+
+\subsection{Sketching} ~
+
+这一节和上一节是延续的，我们希望给出一个矩阵 $A$ 的 Sketch（最``好''的方式当然是 SVD，但 SVD 所需的时间、空间较大）。利用上一节的方法，我们可以令 $B=I$ 然后去 sample $X$ 使 
+\[
+    \E[\|X-A\|_{F}^{2}] \le \frac{n\|A\|_{F}^{2}}{s}
+\]
+但这个 Bound 不是太好。
+
+为此，先对 $A$ 进行行采样（采样 $r$ 次，第 $k$ 行的概率 $p_k \propto \|a_{k}\|^{2}$）得到矩阵 $R$，这个过程等同于在之前的 Sampling 方法中取 $AB$ 为 $A^\top A$，得到 $X=R^\top R$ 且
+\[
+    \E[\|A^{\top}A-R^{\top}R\|_{F}^{2}] \le \frac{\|A\|_{F}^{4}}{r}
+\]
+
+下面，尝试找一个``投影矩阵'' $P$，s.t.
+\begin{enumerate}[noitemsep]
+    \item $\forall y, PR^{\top}y=R^{\top}y$
+    \item $\forall x, \forall y, x^{\top}R^{\top}y=0 \implies Px=0$
+\end{enumerate}
+实际上是说，$P$ 在 $R$ 的行向量空间上表现为单位矩阵，在其正交补空间上表现为 0，其实是一种广义逆。我们直接断言 $P$ 是存在的：
+
+\begin{enumerate}[noitemsep]
+    \item 若 $R$ 可逆，则 $P=R^{\top}(RR^{\top})^{-1}R$
+    \item 若 $R$ 不可逆，则 $P=\sum\sigma_{i}^{-1}u_{i}u_{i}^{\top}$（相当于在 SVD 中对对角线上的非零元取倒数）
+\end{enumerate}
+
+这样的 $P$ 能使 $A \approx AP$。先引入 2-范数
+\[
+    \|A-AP\|_{2}^{2} = \max_{\|v\|=1} \|(A-AP)v\|^{2}
+\]
+
+以 $V$ 记 $R$ 的行向量空间。
+对 $v\in V$， $Pv=v \implies (A-AP)v=Av-Av=0$。
+所以只用考虑 $v\in V^{\perp}$ 的那些，此时 $Rv=0$ 且 $Pv=0$。
+\begin{align*}
+    \|(A-AP)v\|_{2}^{2} &= \|Av\|_{2}^{2} \\
+    &= v^{T}A^{T}A v \\
+    &= v^{T}(A^{T}A-R^{T}R)v \quad (\text{因 } Rv=0) \\
+    &\le \|A^{T}A-R^{T}R\|_{2} \\
+    &\le \|A^{T}A-R^{T}R\|_{F}
+\end{align*}
+(中间用到了 $\|x\|=1$ 时 $x^T A x \le \|A\|_2 \le \|A\|_F$)
+
+此时
+\[
+    \E[\|A-AP\|_{2}^{2}] \le \E[\|A^{T}A-R^{T}R\|_{F}] \le \sqrt{\frac{\|A\|_{F}^{4}}{r}} = \frac{\|A\|_{F}^{2}}{\sqrt{r}}
+\]
+
+现在对 $AP$ 使用上一节的采样算法得到 $X$：
+\[
+    \E[\|X-AP\|_{F}^{2}] \le \frac{\|A\|_{F}^{2}\|P\|_{F}^{2}}{s} \le \frac{r}{s}\|A\|_{F}^{2}
+\]
+($P$ 在 $V$ 上为 1，在 $V^{\perp}$ 为 0，故 $\|P\|_{F}^{2} = \text{rank}(R) \le r$)
+
+最终（用 $a^2 \le (b + c)^2 = b^2 + c^2 + 2bc \le 2b^2 + 2c^2$）
+\begin{align*}
+    \|X-A\|_{2}^{2} &\le 2\|X-AP\|_{2}^{2} + 2\|AP-A\|_{2}^{2} \\
+    &\le \|A\|_{F}^{2}\left(\frac{2}{\sqrt{r}}+\frac{2r}{s}\right)
+\end{align*}
+取 $r=s^{\frac{2}{3}}$ 可以使之最小。
